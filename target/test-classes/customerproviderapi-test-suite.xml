@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:core="http://www.mulesoft.org/schema/mule/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+    <munit:config mock-connectors="false" mock-inbounds="false" name="munit" doc:name="MUnit configuration"/>
+    <spring:beans>
+        <spring:import resource="classpath:customerproviderapi.xml"/>
+    </spring:beans>
+    <munit:test name="customerproviderapi-test-suite-get:/customer:customerproviderapi-configTest" description="Test">
+        <flow-ref name="get:/customer:customerproviderapi-config" doc:name="Flow-ref to get:/customer:customerproviderapi-config"/>
+        <munit:assert-not-null message="Payload is Null" doc:name="Assert Not Null Payload"/>
+    </munit:test>
+    <munit:test name="customerproviderapi-test-suite-get:/customer/{id}:customerproviderapi-configTest" description="Test">
+        <munit:set payload="#['']" doc:name="Set http.uri.params">
+            <munit:inbound-properties>
+                <munit:inbound-property key="http.uri.params" value="#[['id': '1']]"/>
+            </munit:inbound-properties>
+        </munit:set>
+        <flow-ref name="get:/customer/{id}:customerproviderapi-config" doc:name="Flow-ref to get:/customer/{id}:customerproviderapi-config"/>
+        <munit:assert-not-null message="Payload in Null" doc:name="Assert Not Null Payload"/>
+    </munit:test>
+    <munit:test name="customerproviderapi-test-suite-delete:/customer/{id}:customerproviderapi-configTest" description="Test">
+        <munit:set payload="#['']" doc:name="Set http.uri.params">
+            <munit:inbound-properties>
+                <munit:inbound-property key="http.uri.params" value="#[['id': '1']]"/>
+            </munit:inbound-properties>
+        </munit:set>
+        <flow-ref name="delete:/customer/{id}:customerproviderapi-config" doc:name="Flow-ref to delete:/customer/{id}:customerproviderapi-config"/>
+        <munit:assert-on-equals message="Output message is not matching expected value" expectedValue="#[ &quot;message&quot; : &quot;record deleted successfully&quot;]" actualValue="#[ &quot;message&quot; : &quot;record deleted successfully&quot;]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="customerproviderapi-test-suite-put:/customer/{id}:customerproviderapi-configTest" description="Test">
+        <munit:set payload="#['']" doc:name="Set http.uri.params">
+            <munit:inbound-properties>
+                <munit:inbound-property key="http.uri.params" value="#[['id': '1']]"/>
+            </munit:inbound-properties>
+        </munit:set>
+        <munit:set payload="#[{'firstname':'Mary' ,'lastname' : 'Smith'}]" doc:name="Set json payload"/>
+        <flow-ref name="put:/customer/{id}:customerproviderapi-config" doc:name="Flow-ref to put:/customer/{id}:customerproviderapi-config"/>
+        <munit:assert-on-equals message="Output message is not matching expected value" expectedValue="#[&quot;message&quot; : &quot;record updated successfully&quot;]" actualValue="#[&quot;message&quot; : &quot;record updated successfully&quot;]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="customerproviderapi-test-suite-post:/customer:customerproviderapi-configTest" description="Test">
+        <munit:set payload="#[{'firstname':'Jane' ,'lastname' : 'Smith' , 'addresses' : [{'billing address': ' 127 , george street , sydney nsw 2000'},  {'shipping address' : '312 , charles street , Paramatta Nsw 2150'} ] }]" doc:name="Set json payload" mimeType="application/json"/>
+        <flow-ref name="post:/customer:customerproviderapi-config" doc:name="Flow-ref to post:/customer:customerproviderapi-config"/>
+        <munit:assert-on-equals message="Output message is not matching expected value" expectedValue="#[ &quot;message&quot; : &quot;record created successfully&quot;]" actualValue="#[ &quot;message&quot; : &quot;record created successfully&quot;]" doc:name="Assert Equals"/>
+    </munit:test>
+</mule>

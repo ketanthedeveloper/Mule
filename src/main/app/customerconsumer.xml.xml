@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+    <http:request-config name="HTTP_Request_Configuration" host="localhost" port="8081" doc:name="HTTP Request Configuration"/>
+    <flow name="customerconsumer.xmlFlow">
+        <poll doc:name="Poll">
+            <fixed-frequency-scheduler frequency="5" timeUnit="MINUTES"/>
+            <watermark variable="timestamp" default-expression="#[server.dateTime.format(&quot;yyyy-MM-dd'T'HH:mm:ss.SSSZ&quot;)]" selector="MAX" selector-expression="#[payload.LastModifiedDate]"/>
+            <http:request config-ref="HTTP_Request_Configuration" path="/api/customer" method="GET" doc:name="HTTP">
+                <http:request-builder>
+                    <http:query-param paramName="timeStamp" value="#[flowVars.timestamp]"/>
+                </http:request-builder>
+            </http:request>
+        </poll>
+        <byte-array-to-string-transformer doc:name="Byte Array to String"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+    </flow>
+</mule>

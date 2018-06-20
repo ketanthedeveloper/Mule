@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+   
+   <db:generic-config name="Generic_Database_Configuration" url="jdbc:sqlserver://127.0.0.1;user=sa;password=yourPassword;"
+		driverClassName="com.microsoft.sqlserver.jdbc.SQLServerDriver" doc:name="Generic Database Configuration" />
+   
+    <apikit:config name="customerproviderapi-config" raml="customerproviderapi.raml" consoleEnabled="false" doc:name="Router"/>
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <flow name="customerproviderapi-main">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/api/*" doc:name="HTTP"/>
+        <apikit:router config-ref="customerproviderapi-config" doc:name="APIkit Router"/>
+        <exception-strategy ref="customerproviderapi-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="customerproviderapi-console">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/console/*" doc:name="HTTP"/>
+        <apikit:console config-ref="customerproviderapi-config" doc:name="APIkit Console"/>
+    </flow>
+    <flow name="put:/customer/{id}:customerproviderapi-config">
+        <byte-array-to-string-transformer doc:name="Converting Input Payload Byte Array to String"/>
+        <json:object-to-json-transformer returnClass="java.util.Map" doc:name="Converting String Payload from Object to JSON"/>
+        <db:delete config-ref="Generic_Database_Configuration" doc:name="Customer Database Config ">
+            <db:parameterized-query><![CDATA[Update customer set FIRSTNAME=#[payload.firstname]]]></db:parameterized-query>
+        </db:delete>
+        <set-payload value="{ &#xA;    &quot;message&quot; : &quot;record updated successfully&quot;&#xA;    }" doc:name="Set Payload"/>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <logger message="#[exception.info]" level="INFO" doc:name="Logger"/>
+            <set-property propertyName="http.status" value="500" doc:name="Property"/>
+            <set-payload value="{&quot;message&quot; : &quot;error in retrieving customer record&quot;}" doc:name="Set Payload"/>
+        </catch-exception-strategy>
+    </flow>
+    <flow name="delete:/customer/{id}:customerproviderapi-config">
+        <db:delete config-ref="Generic_Database_Configuration" doc:name="Customer Database Config">
+            <db:parameterized-query><![CDATA[Delete from customers where customer_id = #[message.inboundProperties.'http.url.params'.id]]]></db:parameterized-query>
+        </db:delete>
+        <set-payload value="{ &#xA;    &quot;message&quot; : &quot;record deleted successfully&quot;&#xA;    }" doc:name="Set Payload"/>
+     <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <logger message="#[exception.info]" level="INFO" doc:name="Logger"/>
+            <set-property propertyName="http.status" value="500" doc:name="Property"/>
+            <set-payload value="{&quot;message&quot; : &quot;error in deleting customer record&quot;}" doc:name="Set Payload"/>
+        </catch-exception-strategy>
+    
+    </flow>
+    <flow name="get:/customer:customerproviderapi-config">
+        <db:select config-ref="Generic_Database_Configuration" doc:name="Customer Database Config">
+            <db:parameterized-query><![CDATA[SELECT *
+  FROM Customers where lastUpdatedtime > #[message.inboundProperties.'http.query.params'.timeStamp]]]></db:parameterized-query>
+        </db:select>
+        <set-payload value="[&#xA;   {&quot;id&quot;:1, &#xA;   &quot;firstname&quot;:&quot;John&quot; , &#xA;   &quot;lastname&quot; : &quot;Smith&quot;,&#xA;   &quot;addresses&quot; : [{&quot;billing address&quot;: &quot; 127 , george street , sydney nsw 2000&quot;},&#xA;   {&quot;shipping address&quot; : &quot;312 , charles street , Paramatta Nsw 2150&quot;}&#xA;   ]},&#xA;    {&quot;id&quot;:2, &#xA;   &quot;firstname&quot;:&quot;Ann&quot; , &#xA;   &quot;lastname&quot; : &quot;Smith&quot;,&#xA;   &quot;addresses&quot; : [{&quot;billing address&quot;: &quot; 127 , george street , sydney nsw 2000&quot;},&#xA;   {&quot;shipping address&quot; : &quot;312 , charles street , Paramatta Nsw 2150&quot;}&#xA;   ]}&#xA;]" doc:name="Set Payload"/>
+   <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <logger message="#[exception.info]" level="INFO" doc:name="Logger"/>
+            <set-property propertyName="http.status" value="500" doc:name="Property"/>
+            <set-payload value="{&quot;message&quot; : &quot;error in retrieving customer record&quot;}" doc:name="Set Payload"/>
+        </catch-exception-strategy>
+  
+    </flow>
+    <flow name="get:/customer/{id}:customerproviderapi-config">
+        <db:select config-ref="Generic_Database_Configuration" doc:name="Customer Database Config">
+            <db:parameterized-query><![CDATA[SELECT *
+  FROM Customers where customer_id = #[message.inboundProperties.'http.url.params'.id]]]></db:parameterized-query>
+        </db:select>
+        <set-payload value="{&quot;id&quot;:2, &#xA;  &quot;firstname&quot;:&quot;Ann&quot; , &#xA;  &quot;lastname&quot; : &quot;Smith&quot;,&#xA;  &quot;addresses&quot; : [{&quot;billing address&quot;: &quot; 127 , george street , sydney nsw 2000&quot;},&#xA;  {&quot;shipping address&quot; : &quot;312 , charles street , Paramatta Nsw 2150&quot;}&#xA;  ]}" doc:name="Set Payload"/>
+   <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <logger message="#[exception.info]" level="INFO" doc:name="Logger"/>
+            <set-property propertyName="http.status" value="500" doc:name="Property"/>
+            <set-payload value="{&quot;message&quot; : &quot;error in retrieving customer record&quot;}" doc:name="Set Payload"/>
+        </catch-exception-strategy>
+  
+    </flow>
+    <flow name="post:/customer:customerproviderapi-config">
+        <byte-array-to-string-transformer doc:name="Converting input payload from Byte Array to String"/>
+        <json:json-to-object-transformer returnClass="java.util.Map" doc:name="Converting string payload JSON to Object"/>
+        <db:insert config-ref="Generic_Database_Configuration" autoGeneratedKeys="true" autoGeneratedKeysColumnIndexes="1" doc:name="Customer Database Config">
+            <db:parameterized-query><![CDATA[INSERT INTO Customers ( FIRSTNAME, LASTNAME , BILLING ADDRESS , SHIPPING ADDRESS) VALUES ( #[payload.firstname], #[payload.lastname] , #[payload.addresses[0].billing address] , #[payload.addresses[0].shipping address])]]></db:parameterized-query>
+        </db:insert>
+        <set-payload value="{&quot;id&quot;:1, &#xA;    &quot;message&quot; : &quot;record created successfully&quot;&#xA;    }" doc:name="Set Payload"/>
+    <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <logger message="#[exception.info]" level="INFO" doc:name="Logger"/>
+            <set-property propertyName="http.status" value="500" doc:name="Property"/>
+            <set-payload value="{&quot;message&quot; : &quot;error in creating customer record&quot;}" doc:name="Set Payload"/>
+        </catch-exception-strategy>
+    </flow>
+    <apikit:mapping-exception-strategy name="customerproviderapi-apiKitGlobalExceptionMapping">
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Resource not found&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="405">
+            <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Method not allowed&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="406">
+            <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Bad request&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
+</mule>

@@ -1,0 +1,121 @@
+#%RAML 1.0
+title: Customer REST Services API using Data Types
+version: v1
+protocols: [ HTTPS ] 
+#baseUri: http://company.domain.com/api/{version}
+baseUri: https://mocksvc.mulesoft.com/mocks/101ed4e9-5ca0-4f18-ad52-f6eacad31a59/api/{version}
+mediaType: application/json
+
+securitySchemes:
+  basicAuth:
+    description: Each request must contain the headers necessary for
+                 basic authentication
+    type: Basic Authentication
+    describedBy:
+      headers:
+        Authorization:
+          description: Used to send the Base64-encoded "username:password"
+                       credentials
+          type: string
+      responses:
+        401:
+          description: |
+            Unauthorized. Either the provided username and password
+            combination is invalid, or the user is not allowed to access
+            the content provided by the requested URL.
+            
+            
+      
+/customer:
+  get:
+    description: List all customers matching query criteria if given else will list all customers
+    queryParameters:
+      timeStamp:
+        description: "timestamp from which record needs to be retrieved "
+        required: false
+    responses:
+      200:
+        body:
+          application/json:
+            example: |
+              [
+                 {"id":1, 
+                 "firstname":"John" , 
+                 "lastname" : "Smith",
+                 "addresses" : [{"billing address": " 127 , george street , sydney nsw 2000"},
+                 {"shipping address" : "312 , charles street , Paramatta Nsw 2150"}
+                 ]},
+                  {"id":2, 
+                 "firstname":"Ann" , 
+                 "lastname" : "Smith",
+                 "addresses" : [{"billing address": " 127 , george street , sydney nsw 2000"},
+                 {"shipping address" : "312 , charles street , Paramatta Nsw 2150"}
+                 ]}
+              ]
+  post:
+    description: Create a new customer
+    body:
+      application/json:
+        example: |
+          {  "firstname":"Ann" , 
+                 "lastname" : "Smith",
+                 "addresses" : [{"billing address": " 127 , george street , sydney nsw 2000"},
+                 {"shipping address" : "312 , charles street , Paramatta Nsw 2150"}
+                 ]}
+    responses:
+      201:
+        body:
+          application/json:
+            example: |
+             {"id":1, 
+                 "message" : "record created successfully"
+                 }
+  /{id}:
+    get:
+      description: Get a Customer by id
+      responses:
+        200:
+          body:
+            application/json:
+              example: |
+               {"id":2, 
+                 "firstname":"Ann" , 
+                 "lastname" : "Smith",
+                 "addresses" : [{"billing address": " 127 , george street , sydney nsw 2000"},
+                 {"shipping address" : "312 , charles street , Paramatta Nsw 2150"}
+                 ]}
+        404:
+          body:
+            application/json:
+              example: |
+               { "message" : "Not found", "code" : 1001 }
+              
+    put:
+      description: Update customer record
+      body:
+        application/json:
+          example: |
+           {      
+                 "firstname":"Jane" , 
+                 "lastname" : "Smith",
+                 "addresses" : [{"billing address": " 127 , george street , sydney nsw 2000"},
+                 {"shipping address" : "312 , charles street , Paramatta Nsw 2150"}
+                 ]}
+      responses:
+       200:
+        body:
+          application/json:
+            example: |
+             { 
+                 "message" : "record updated successfully"
+                 }
+    delete:
+      description: Update customer record
+      responses:
+       200:
+        body:
+          application/json:
+            example: |
+             { 
+                 "message" : "record deleted successfully"
+                 }
